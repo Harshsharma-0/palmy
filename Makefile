@@ -10,6 +10,7 @@ HAND_MODEL_LITE_URL=https://storage.googleapis.com/mediapipe-assets/hand_landmar
 
 BUILD_DIR=./build
 
+all:
 
 gen: genanchor.js
 	node ./genanchor.js > ./src/anchor.cpp
