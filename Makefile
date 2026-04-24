@@ -15,7 +15,7 @@ gen: genanchor.js
 	node ./genanchor.js > ./src/anchor.cpp
 
 cmake:CMakeLists.txt
-	 cmake ./ -B build ${LITERT_CMDLINE}
+	 cmake ./ -B build ${LITERT_CMDLINE} && ln -s $(shell pwd)/build/compile_commands.json $(shell pwd)/compile_commands.json
 
 model:
 	wget ${PALM_MODEL_URL} -O ${BUILD_DIR}/palm_detection_full.tflite
