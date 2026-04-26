@@ -20,6 +20,7 @@ include_directories(
 add_library(detector
   src/anchor.cpp
   src/palmdetector.cpp
+  src/handmarker.cpp
 )
 
 include_directories(detector PRIVATE

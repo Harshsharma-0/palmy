@@ -116,7 +116,66 @@ detectorPalm::detectorPalm(const char *modelName, litert::Environment &env) {
   init(modelName, env);
 }
 
-palmy::container detectorPalm::operator >> (cv::Mat &frame) {
+palmy::palmOut1 processBoxes(palmy::palmIn &in, palmy::container &final_boxes) {
+
+  palmy::palmOut1 points;
+
+  if (final_boxes.size() > 2)
+    final_boxes.resize(2);
+
+  int rows = in.rows;
+  int cols = in.cols;
+
+  for (auto &b : final_boxes) {
+    for (auto &itr : b.circles) {
+      int x = itr.x * cols;
+      int y = itr.y * rows;
+      cv::circle(in, cv::Point(x, y), 3, cv::Scalar(255, 255, 0), -1);
+    }
+    auto vec = final_boxes[0].circles;
+    struct {
+      float x, y;
+    } center;
+    float boxw = b.x2 - b.x1;
+    float boxy = b.y2 - b.y1;
+    center.x = b.x2 - (boxw / 2);
+    center.y = b.y2 - (boxy / 2);
+
+    float angle =
+        -std::atan2(vec[2].y - center.y, vec[2].x - center.x) * (180 / M_PI);
+    angle += angle < 0 ? 360 : 0;
+
+
+    float distancey = std::sqrt((std::pow((vec[2].x - vec[0].x), 2)) +
+                                std::pow((vec[2].y - vec[0].y), 2));
+    float distancex = std::sqrt((std::pow((vec[2].x - vec[0].x), 2)) +
+                                std::pow((vec[2].y - vec[0].y), 2));
+
+    int x1 = std::ceil(b.x1 * (float)cols);
+    int y1 = std::ceil(((b.y1 - (distancey * 1.5)) * (float)rows));
+    int x2 = std::ceil(b.x2 * (float)cols);
+    int y2 = std::ceil(b.y2 * (float)rows);
+
+    int diff = ((y2 - y1) - (x2 - x1)) / 2;
+    x1 -= diff;
+    x2 += diff;
+
+    points.push_back({std::clamp(x1, 1,(cols - (x2 - x1))),
+                      std::clamp(y1, 1, rows), std::clamp(x2 - x1, 1, cols),
+                      std::clamp(y2 - y1, 1, rows)});
+
+    cv::rectangle(in, cv::Point(x1, y1), cv::Point(x2, y2), {0, 255, 0}, 2);
+  }
+
+  return points;
+}
+palmy::palmOut detectorPalm::operator<<(palmy::palmIn in) {
+
+  cv::Mat frame = in.clone();
+
+  cv::resize(frame, frame, resizeDimension);
+  cv::cvtColor(frame, frame, cv::COLOR_BGR2RGB);
+  frame.convertTo(frame, CV_32F, 1.0 / 255.0);
 
   boxes.clear();
   std::vector<float> data(palmy::numAnchor * palmy::numAttr);
@@ -141,8 +200,9 @@ palmy::container detectorPalm::operator >> (cv::Mat &frame) {
 
   outputBuffers[0].ClearEvent();
   outputBuffers[1].ClearEvent();
+  auto final_boxes = NMS(boxes, 0.3f);
 
-  return NMS(boxes, 0.3f);
+  return {in, processBoxes(in, final_boxes)};
 };
 }; // namespace palmy
 

@@ -7,7 +7,7 @@ let anchorOptions = {
   anchorOffsetX: 0.5,
   anchorOffsetY: 0.5,
   strides: [8, 16, 16, 16],
-  aspectRatios: [1.0, 0.5], // <--
+  aspectRatios: [1.0, 1.0], // <--
   fixedAnchorSize: false,
 }
 
