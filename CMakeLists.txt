@@ -9,10 +9,10 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(OPENCV4 REQUIRED opencv4)
 
-add_subdirectory(${LITERT_DIR} "${LITERT_DIR}/build")
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/litert_cc_sdk)
 
 include_directories(
-  ${LITERT_DIR} 
+  ${CMAKE_CURRENT_SOURCE_DIR}/litert_cc_sdk 
   ${OPENCV4_INCLUDE_DIRS}
   ${CMAKE_BINARY_DIR}/include
 )
@@ -28,7 +28,8 @@ include_directories(detector PRIVATE
 )
 
 target_link_libraries(detector
-   litert_cc_api 
+   litert_cc_api   
+   ${CMAKE_CURRENT_SOURCE_DIR}/litert_cc_sdk/libLiteRtWebGpuAccelerator.so
    ${LITERT_LINK}
    absl::die_if_null
    absl::flags
