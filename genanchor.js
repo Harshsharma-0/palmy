@@ -1,3 +1,4 @@
+//Code credit goes to the author of this code, as it's not written by me and i forget from where i pulledd this code from
 let anchorOptions = {
   numLayers: 4,
   minScale: 0.1484375,
