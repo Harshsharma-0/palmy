@@ -21,7 +21,7 @@ int main() {
       break;
 
     auto data  = palmer << frame;
-    auto [clone,boxes] = marker << data;
+    auto [clone,points] = marker << data;
 
     cv::flip(clone, clone, 1);
     cv::imshow("palm detection", clone);

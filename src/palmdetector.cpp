@@ -145,10 +145,7 @@ palmy::palmOut1 processBoxes(palmy::palmIn &in, palmy::container &final_boxes) {
         -std::atan2(vec[2].y - center.y, vec[2].x - center.x) * (180 / M_PI);
     angle += angle < 0 ? 360 : 0;
 
-
     float distancey = std::sqrt((std::pow((vec[2].x - vec[0].x), 2)) +
-                                std::pow((vec[2].y - vec[0].y), 2));
-    float distancex = std::sqrt((std::pow((vec[2].x - vec[0].x), 2)) +
                                 std::pow((vec[2].y - vec[0].y), 2));
 
     int x1 = std::ceil(b.x1 * (float)cols);
@@ -160,7 +157,7 @@ palmy::palmOut1 processBoxes(palmy::palmIn &in, palmy::container &final_boxes) {
     x1 -= diff;
     x2 += diff;
 
-    points.push_back({std::clamp(x1, 1,(cols - (x2 - x1))),
+    points.push_back({std::clamp(x1, 1, (cols - (x2 - x1))),
                       std::clamp(y1, 1, rows), std::clamp(x2 - x1, 1, cols),
                       std::clamp(y2 - y1, 1, rows)});
 
@@ -205,100 +202,3 @@ palmy::palmOut detectorPalm::operator<<(palmy::palmIn in) {
   return {in, processBoxes(in, final_boxes)};
 };
 }; // namespace palmy
-
-int run() {
-
-  LITERT_ASSIGN_OR_ABORT(auto env, litert::Environment::Create({}));
-  LITERT_ASSIGN_OR_ABORT(auto palmModel, litert::CompiledModel::Create(
-                                             env, "palm_detection_full.tflite",
-                                             litert::HwAccelerators::kGpu));
-
-  LITERT_ASSIGN_OR_RETURN(auto input_buffers, palmModel.CreateInputBuffers());
-  LITERT_ASSIGN_OR_RETURN(auto output_buffers, palmModel.CreateOutputBuffers());
-
-  auto type = palmModel.GetInputTensorType("input_1");
-  cv::Size resizeDimension;
-
-  LITERT_ABORT_IF_ERROR(type.HasValue());
-  auto format = type->Layout().Dimensions();
-
-  resizeDimension.width = format[1];
-  resizeDimension.height = format[2];
-
-  cv::VideoCapture cap(0);
-
-  if (!cap.isOpened()) {
-    std::cerr << "camera not workding \n" << std::endl;
-    return -1;
-  }
-
-  constexpr int NUM_ANCHORS = 2016;
-  constexpr int NUM_ATTR = 18;
-
-  std::vector<float> data(NUM_ANCHORS * NUM_ATTR);
-  std::vector<float> score(NUM_ANCHORS);
-
-  while (1) {
-    cv::Mat frame;
-    cap >> frame;
-    if (frame.empty())
-      break;
-    cv::Mat clone = frame.clone();
-
-    // Resize
-    cv::Mat resized;
-    cv::resize(frame, resized, resizeDimension);
-    // cv::flip(resized, resized, 1);
-
-    cv::cvtColor(resized, resized, cv::COLOR_BGR2RGB);
-    resized.convertTo(resized, CV_32F, 1.0 / 255.0);
-
-    input_buffers[0].Write<float>(absl::MakeConstSpan(
-        resized.ptr<float>(), resized.total() * resized.channels()));
-
-    bool async = false;
-    LITERT_ABORT_IF_ERROR(
-        palmModel.RunAsync(0, input_buffers, output_buffers, async));
-
-    output_buffers[0].Read<float>(absl::MakeSpan(data));
-    output_buffers[1].Read<float>(absl::MakeSpan(score));
-
-    std::vector<box> boxes;
-
-    for (ssize_t i = 0; i < score.size(); i++) {
-      if (score[i] < 0.7)
-        continue;
-      const float *a = data.data() + (i * NUM_ATTR);
-      boxes.push_back(decode(anc[i], a, score[i]));
-    };
-
-    auto final_boxes = NMS(boxes, 0.3f);
-    output_buffers[0].ClearEvent();
-    output_buffers[1].ClearEvent();
-
-    // -----------------------------
-    // Draw
-    // -----------------------------
-    for (auto &b : final_boxes) {
-      int x1 = b.x1 * clone.cols;
-      int y1 = b.y1 * clone.rows;
-      int x2 = b.x2 * clone.cols;
-      int y2 = b.y2 * clone.rows;
-
-      cv::rectangle(clone, cv::Point(x1, y1), cv::Point(x2, y2), {0, 255, 0},
-                    2);
-      for (auto &itr : b.circles) {
-        int x = itr.x * clone.cols;
-        int y = itr.y * clone.rows;
-        cv::circle(clone, cv::Point(x, y), 3, cv::Scalar(255, 255, 0), -1);
-      }
-    }
-    cv::flip(clone, clone, 1);
-    cv::imshow("palm detection", clone);
-    auto key = cv::waitKey(16);
-    if (key == 27)
-      break; // ESC to exit
-  }
-
-  return 0;
-};

@@ -17,17 +17,17 @@ include_directories(
   ${CMAKE_BINARY_DIR}/include
 )
 
-add_library(detector
+add_library(palmy
   src/anchor.cpp
   src/palmdetector.cpp
   src/handmarker.cpp
 )
 
-include_directories(detector PRIVATE
+include_directories(palmy PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-target_link_libraries(detector
+target_link_libraries(palmy
    litert_cc_api   
    ${CMAKE_CURRENT_SOURCE_DIR}/litert_cc_sdk/libLiteRtWebGpuAccelerator.so
    ${LITERT_LINK}
@@ -45,6 +45,6 @@ target_link_libraries(detector
 
 
 add_executable(open main.cpp)
-target_link_libraries(open PRIVATE detector)
+target_link_libraries(open PRIVATE palmy)
 
 

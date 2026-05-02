@@ -19,12 +19,6 @@ int handMarker::init(const char *modelName, litert::Environment &env) {
   LITERT_ABORT_IF_ERROR(type.HasValue());
   LITERT_ABORT_IF_ERROR(modelLay.HasValue());
   auto format = type->Layout().Dimensions();
-  for (auto lay : modelLay.Value()) {
-    auto nums = lay.Dimensions();
-    for (auto ten : nums)
-      std::cout << ten << " x ";
-    std::cout << std::endl;
-  };
 
   resizeDimension.width = format[1];
   resizeDimension.height = format[2];
@@ -41,7 +35,7 @@ palmy::markerOut handMarker::operator<<(palmy::palmOut in) {
     float y;
     float z;
   };
-  std::vector<float> jojo(63);
+  std::vector<float> predictedHandMarker(63);
   float score[1024];
 
   for (auto &entry : boxes) {
@@ -57,8 +51,8 @@ palmy::markerOut handMarker::operator<<(palmy::palmOut in) {
     LITERT_ABORT_IF_ERROR(
         handModel.RunAsync(0, inputBuffers, outputBuffers, async));
 
-    outputBuffers[0].Read<float>(absl::MakeSpan(jojo));
-    struct lpoint *looped = (struct lpoint *)jojo.data();
+    outputBuffers[0].Read<float>(absl::MakeSpan(predictedHandMarker));
+    struct lpoint *looped = (struct lpoint *)predictedHandMarker.data();
 
     for (size_t i = 0; i < 21; i++) {
       int x = std::ceil(((looped[i].x / 224) * entry.w) + entry.x);

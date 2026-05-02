@@ -24,5 +24,3 @@ private:
   cv::Size resizeDimension;
 };
 } // namespace palmy
-
-int run();
